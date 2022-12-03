@@ -13,5 +13,5 @@ pub fn run(contents: &str) {
     calories.sort_by(|a, b| b.cmp(a));
 
     println!("Biggest: {}", calories[0]);
-    println!("Top 3: {}", calories[0]+ calories[1]+  calories[2]);
+    println!("Top 3: {}", calories[0] + calories[1] + calories[2]);
 }

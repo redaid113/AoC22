@@ -15,7 +15,6 @@ fn main() {
     match day {
         "d_1" => d_1::run(&contents),
         "d_2" => d_2::run(&contents),
-        _ => println!("nothing")
+        _ => println!("nothing"),
     }
-
 }
