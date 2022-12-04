@@ -4,6 +4,8 @@ use std::fs;
 mod d_1;
 mod d_2;
 mod d_3;
+mod d_4;
+mod d_5;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -11,12 +13,15 @@ fn main() {
     let file_name = &args[2];
 
     let file_path = &format!("./src/{day}/{file_name}");
-    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
-
+    let file_contents =
+        fs::read_to_string(file_path).expect("Should have been able to read the file");
+    let contents = (&file_contents).trim();
     match day {
         "d_1" => d_1::run(&contents),
         "d_2" => d_2::run(&contents),
         "d_3" => d_3::run(&contents),
+        "d_4" => d_4::run(&contents),
+        "d_5" => d_5::run(&contents),
 
         _ => println!("nothing"),
     }
