@@ -26,26 +26,23 @@ fn move_head(dir: &str, head: (i32, i32)) -> (i32, i32) {
         _ => panic!("NOOO"),
     }
 }
+
 fn move_piece(piece: (i32, i32), move_x: i32, y_diff: i32) -> (i32, i32) {
     return (piece.0 + move_x, piece.1 + y_diff);
+}
+
+fn move_by(diff: i32) -> i32 {
+    if diff == 0 {
+        return 0;
+    }
+    return (diff + diff / diff.abs()) / 2;
 }
 
 fn move_rope(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
     let x_diff = a.0 - b.0;
     let y_diff = a.1 - b.1;
     if x_diff.abs() == 2 || y_diff.abs() == 2 {
-        let move_x = if x_diff == 0 {
-            0
-        } else {
-            (x_diff + x_diff / x_diff.abs()) / 2
-        };
-        let move_y = if y_diff == 0 {
-            0
-        } else {
-            (y_diff + y_diff / y_diff.abs()) / 2
-        };
-
-        return move_piece(b, move_x, move_y);
+        return move_piece(b, move_by(x_diff), move_by(y_diff));
     }
     return b;
 }
@@ -57,6 +54,7 @@ fn calculated_visted<const ROPE_LENGTH: usize>(instructions: Vec<(&str, i32)>) -
 
     let mut visited = HashSet::<(i32, i32)>::new();
     visited.insert(rope[tail]);
+
     instructions.into_iter().for_each(|(dir, steps)| {
         for _ in 0..steps {
             rope[head] = move_head(dir, rope[head]);
