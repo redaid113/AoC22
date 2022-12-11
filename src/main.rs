@@ -4,6 +4,7 @@ use std::fs;
 mod d_1;
 mod d_10;
 mod d_11;
+mod d_12;
 mod d_2;
 mod d_3;
 mod d_4;
@@ -34,6 +35,7 @@ fn main() {
         "d_9" => d_9::run(&contents),
         "d_10" => d_10::run(&contents),
         "d_11" => d_11::run(&contents),
+        "d_12" => d_12::run(&contents),
 
         _ => println!("nothing"),
     }
