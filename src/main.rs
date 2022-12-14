@@ -6,6 +6,8 @@ mod d_10;
 mod d_11;
 mod d_12;
 mod d_13;
+mod d_14;
+mod d_15;
 mod d_2;
 mod d_3;
 mod d_4;
@@ -38,6 +40,8 @@ fn main() {
         "d_11" => d_11::run(&contents),
         "d_12" => d_12::run(&contents),
         "d_13" => d_13::run(&contents),
+        "d_14" => d_14::run(&contents),
+        "d_15" => d_15::run(&contents),
 
         _ => println!("nothing"),
     }

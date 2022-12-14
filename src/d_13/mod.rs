@@ -13,6 +13,7 @@ impl PartialOrd for Value {
         Some(self.cmp(rhs))
     }
 }
+
 impl Ord for Value {
     fn cmp(&self, rhs: &Self) -> Ordering {
         match (self, rhs) {
