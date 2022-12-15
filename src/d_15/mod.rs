@@ -1,25 +1,22 @@
 use std::cmp::Ordering;
-use std::collections::HashSet;
 
 #[derive(Debug)]
 struct Beacon {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 #[derive(Debug)]
 struct Sensor {
-    x: i32,
-    y: i32,
-    distance: i32,
+    x: i64,
+    y: i64,
+    distance: i64,
     beacon: Beacon,
 }
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 struct Range {
-    x1: i32,
-    y1: i32,
-    x2: i32,
-    y2: i32,
+    x1: i64,
+    x2: i64,
 }
 
 impl PartialOrd for Range {
@@ -34,7 +31,7 @@ impl Ord for Range {
     }
 }
 
-fn parse_x_and_y(line: &str) -> Vec<i32> {
+fn parse_x_and_y(line: &str) -> Vec<i64> {
     line.split(", y=").map(|num| num.parse().unwrap()).collect()
 }
 
@@ -45,7 +42,7 @@ fn parse_sensor(line: &str) -> Sensor {
     let sensor_xy = parse_x_and_y(bits[0]);
     let beacon_xy = parse_x_and_y(bits[1]);
     let distance =
-        sensor_xy[0].abs_diff(beacon_xy[0]) as i32 + sensor_xy[1].abs_diff(beacon_xy[1]) as i32;
+        sensor_xy[0].abs_diff(beacon_xy[0]) as i64 + sensor_xy[1].abs_diff(beacon_xy[1]) as i64;
 
     let beacon = Beacon {
         x: beacon_xy[0],
@@ -64,52 +61,84 @@ fn parse_input(contents: &str) -> Vec<Sensor> {
     contents.split("\n").map(parse_sensor).collect()
 }
 
-fn cover_spots(sensors: &Vec<Sensor>, y: i32, min_x: i32, max_x: i32) -> i32 {
-    let mut count = 0;
-    let mut seen: HashSet<i32> = HashSet::new();
-
-    sensors
+fn cover_spots(sensors: &Vec<Sensor>, y: i64, min_x: i64, max_x: i64) -> Vec<Range> {
+    let mut ranges: Vec<Range> = sensors
         .iter()
-        .map(|sensor| &sensor.beacon)
-        .for_each(|beacon| {
-            if beacon.y == HEIGHT {
-                seen.insert(beacon.x);
+        .map(|sensor| {
+            let difference = sensor.distance - sensor.y.abs_diff(y) as i64;
+            if difference < 0 {
+                return Range { x1: 0, x2: 0 };
             }
-        });
-
-    sensors.iter().for_each(|sensor| {
-        let difference = sensor.distance - sensor.y.abs_diff(HEIGHT) as i32;
-        if difference < 0 {
-            return;
-        }
-        for x in sensor.x - difference..=sensor.x + difference {
-            if !seen.contains(&x) {
-                seen.insert(x);
-                count += 1;
+            Range {
+                x1: (sensor.x - difference).max(min_x),
+                x2: (sensor.x + difference).min(max_x),
             }
-        }
-    });
-    return count;
-}
+        })
+        .filter(|range| range.x1 != range.x2)
+        .collect();
+    ranges.sort();
+    if ranges.len() == 0 {
+        return vec![];
+    };
 
-static HEIGHT: i32 = 10;
-fn part1(contents: &str) -> i32 {
-    let sensors = parse_input(contents);
-    cover_spots(&sensors, HEIGHT, i32::MIN, i32::MAX)
-}
-
-fn part2(contents: &str) -> i32 {
-    let sensors = parse_input(contents);
-    let mut ct = 0;
-    for x in 0..=4000000 {
-        let diff = sensors[x % sensors.len()]
-            .x
-            .abs_diff(sensors[x % sensors.len()].distance);
-        if diff % 2 == 0 {
-            ct += 1;
+    let mut output: Vec<Range> = vec![ranges[0].clone()];
+    for i in 1..ranges.len() {
+        let last_range = output.pop().unwrap();
+        if last_range.x2 < ranges[i].x1 {
+            output.push(last_range);
+            output.push(ranges[i].clone());
+        } else {
+            output.push(Range {
+                x1: last_range.x1,
+                x2: ranges[i].x2.max(last_range.x2),
+            });
         }
     }
-    return ct;
+
+    return output;
+}
+
+// static HEIGHT: i64 = 10;
+static HEIGHT: i64 = 2000000;
+fn part1(contents: &str) -> i64 {
+    let sensors = parse_input(contents);
+    let ranges = cover_spots(&sensors, HEIGHT, i64::MIN, i64::MAX);
+
+    let mut beacons_x: Vec<i64> = sensors
+        .iter()
+        .map(|sensor| &sensor.beacon)
+        .filter(|beacon| beacon.y == HEIGHT)
+        .map(|beacon| beacon.x)
+        .collect();
+    beacons_x.dedup();
+
+    ranges
+        .iter()
+        .map(|range| {
+            let total = range.x2.abs_diff(range.x1) as i64 + 1;
+            let found: Vec<&i64> = beacons_x
+                .iter()
+                .filter(|x| **x >= range.x1 && **x <= range.x2)
+                .collect();
+            return total - found.len() as i64;
+        })
+        .sum()
+}
+
+static MIN_X: i64 = 0;
+// static MAX_X: i64 = 20;
+static MAX_X: i64 = 4000000;
+fn part2(contents: &str) -> i64 {
+    let sensors = parse_input(contents);
+    for y in 0..=MAX_X {
+        let ranges = cover_spots(&sensors, y, MIN_X, MAX_X);
+        if ranges.len() > 1 || ranges[0].x2 < MAX_X {
+            return (ranges[0].x2 + 1) * 4000000 + y;
+        } else if ranges[0].x1 == 1 {
+            return y;
+        }
+    }
+    return 0;
 }
 
 pub fn run(contents: &str) {

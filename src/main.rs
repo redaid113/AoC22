@@ -2,12 +2,6 @@ use std::env;
 use std::fs;
 
 mod d_1;
-mod d_10;
-mod d_11;
-mod d_12;
-mod d_13;
-mod d_14;
-mod d_15;
 mod d_2;
 mod d_3;
 mod d_4;
@@ -16,6 +10,14 @@ mod d_6;
 mod d_7;
 mod d_8;
 mod d_9;
+
+mod d_10;
+mod d_11;
+mod d_12;
+mod d_13;
+mod d_14;
+mod d_15;
+mod d_16;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -42,6 +44,7 @@ fn main() {
         "d_13" => d_13::run(&contents),
         "d_14" => d_14::run(&contents),
         "d_15" => d_15::run(&contents),
+        "d_16" => d_16::run(&contents),
 
         _ => println!("nothing"),
     }
