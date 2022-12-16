@@ -11,7 +11,6 @@ struct Valve {
 #[derive(Debug, Clone)]
 struct Node {
     time_remaining: i64,
-    current_flow: i64,
     current_node: String,
 }
 
@@ -20,6 +19,7 @@ struct Node {
 struct Current {
     node: Node,
     elephant: Node,
+    current_flow: i64,
     open: HashSet<String>,
 }
 
@@ -52,7 +52,7 @@ fn shortest_path(valves: &HashMap<String, Valve>, from: &str, to: &str) -> i64 {
         let leads_to = &valves.get(cur).unwrap().leads_to;
         for i in leads_to {
             if i == to {
-                return ct + 1;
+                return ct + 2;
             }
             queue.push_back((i, ct + 1));
         }
@@ -105,23 +105,7 @@ fn parse_input(contents: &str) -> HashMap<String, Valve> {
     return output;
 }
 
-fn open_valve(valves: &HashMap<String, Valve>, current: &Node) -> Node {
-    let mut next = current.clone();
-    next.time_remaining -= 1;
-    next.current_flow += next.time_remaining * valves.get(&current.current_node).unwrap().flow_rate;
-    // next.open.insert(next.current_node.clone());
-    next
-}
-
 fn get_next(valves: &HashMap<String, Valve>, open: &HashSet<String>, current: &Node) -> Vec<Node> {
-    if !open.contains(&current.current_node) && current.current_node != "AA" {
-        let next = open_valve(&valves, &current);
-        if next.time_remaining > 0 {
-            return vec![next];
-        }
-        return vec![];
-    }
-
     let valve = valves.get(&current.current_node).unwrap();
     valve
         .shortest_path
@@ -143,32 +127,54 @@ fn part1(contents: &str) -> i64 {
 
     let mut max: i64 = 0;
     let mut queue: VecDeque<Current> = VecDeque::new();
+    let mut max_visits: HashMap<(String, i64, String, i64), i64> = HashMap::new();
+
     queue.push_back(Current {
         node: Node {
             time_remaining: TOTAL_TIME,
-            current_flow: 0,
             current_node: "AA".to_string(),
         },
         elephant: Node {
             time_remaining: TOTAL_TIME,
-            current_flow: 0,
             current_node: "AA".to_string(),
         },
+        current_flow: 0,
         open: HashSet::new(),
     });
 
     while !queue.is_empty() {
         let current = queue.pop_front().unwrap();
-        max = max.max(current.node.current_flow);
+        let key1 = (
+            current.node.current_node.clone(),
+            current.node.time_remaining,
+            current.elephant.current_node.clone(),
+            current.elephant.time_remaining,
+        );
+        let key2 = (
+            current.elephant.current_node.clone(),
+            current.elephant.time_remaining,
+            current.node.current_node.clone(),
+            current.node.time_remaining,
+        );
+        if max_visits.contains_key(&key1) {
+            if max_visits.get(&key1).unwrap() >= &current.current_flow {
+                continue;
+            }
+        }
+        max_visits.insert(key1, current.current_flow);
+        max_visits.insert(key2, current.current_flow);
+
+        max = max.max(current.current_flow);
 
         get_next(&valves, &current.open, &current.node)
             .iter()
             .for_each(|node| {
                 let mut next = current.clone();
                 next.node = node.clone();
-                if node.current_node == current.node.current_node {
-                    next.open.insert(node.current_node.clone());
-                }
+                next.current_flow +=
+                    node.time_remaining * valves.get(&node.current_node).unwrap().flow_rate;
+                next.open.insert(node.current_node.clone());
+
                 queue.push_back(next);
             });
     }
@@ -180,23 +186,44 @@ fn part2(contents: &str) -> i64 {
 
     let mut max: i64 = 0;
     let mut queue: VecDeque<Current> = VecDeque::new();
+    let mut max_visits: HashMap<(String, i64, String, i64), i64> = HashMap::new();
+
     queue.push_back(Current {
         node: Node {
             time_remaining: TOTAL_TIME - 4,
-            current_flow: 0,
             current_node: "AA".to_string(),
         },
         elephant: Node {
             time_remaining: TOTAL_TIME - 4,
-            current_flow: 0,
             current_node: "AA".to_string(),
         },
+        current_flow: 0,
         open: HashSet::new(),
     });
 
     while !queue.is_empty() {
         let current = queue.pop_front().unwrap();
-        max = max.max(current.node.current_flow + current.elephant.current_flow);
+        let key1 = (
+            current.node.current_node.clone(),
+            current.node.time_remaining,
+            current.elephant.current_node.clone(),
+            current.elephant.time_remaining,
+        );
+        let key2 = (
+            current.elephant.current_node.clone(),
+            current.elephant.time_remaining,
+            current.node.current_node.clone(),
+            current.node.time_remaining,
+        );
+        if max_visits.contains_key(&key1) {
+            if max_visits.get(&key1).unwrap() >= &current.current_flow {
+                continue;
+            }
+        }
+        max_visits.insert(key1, current.current_flow);
+        max_visits.insert(key2, current.current_flow);
+
+        max = max.max(current.current_flow);
 
         let current_next = get_next(&valves, &current.open, &current.node);
         let elephant_next = get_next(&valves, &current.open, &current.elephant);
@@ -205,9 +232,9 @@ fn part2(contents: &str) -> i64 {
             elephant_next.iter().for_each(|node| {
                 let mut next = current.clone();
                 next.elephant = node.clone();
-                if node.current_node == current.elephant.current_node {
-                    next.open.insert(node.current_node.clone());
-                }
+                next.current_flow +=
+                    node.time_remaining * valves.get(&node.current_node).unwrap().flow_rate;
+                next.open.insert(node.current_node.clone());
                 queue.push_back(next);
             });
             continue;
@@ -216,13 +243,15 @@ fn part2(contents: &str) -> i64 {
             current_next.iter().for_each(|node| {
                 let mut next = current.clone();
                 next.node = node.clone();
-                if node.current_node == current.node.current_node {
-                    next.open.insert(node.current_node.clone());
-                }
+                next.current_flow +=
+                    node.time_remaining * valves.get(&node.current_node).unwrap().flow_rate;
+                next.open.insert(node.current_node.clone());
+
                 queue.push_back(next);
             });
             continue;
         }
+
         for c in current_next {
             for e in &elephant_next {
                 if c.current_node != e.current_node {
@@ -231,13 +260,12 @@ fn part2(contents: &str) -> i64 {
                     next.node = c.clone();
                     next.elephant = e.clone();
 
-                    if next.node.current_node == current.node.current_node {
-                        next.open.insert(next.node.current_node.clone());
-                    }
-
-                    if next.elephant.current_node == current.elephant.current_node {
-                        next.open.insert(next.elephant.current_node.clone());
-                    }
+                    next.current_flow +=
+                        c.time_remaining * valves.get(&c.current_node).unwrap().flow_rate;
+                    next.current_flow +=
+                        e.time_remaining * valves.get(&e.current_node).unwrap().flow_rate;
+                    next.open.insert(next.node.current_node.clone());
+                    next.open.insert(next.elephant.current_node.clone());
 
                     queue.push_back(next);
                 }
