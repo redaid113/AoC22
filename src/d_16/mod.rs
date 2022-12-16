@@ -9,12 +9,18 @@ struct Valve {
 }
 
 #[derive(Debug, Clone)]
-struct Current {
+struct Node {
     time_remaining: i64,
     current_flow: i64,
     current_node: String,
+}
+
+#[derive(Debug, Clone)]
+
+struct Current {
+    node: Node,
+    elephant: Node,
     open: HashSet<String>,
-    path: Vec<String>,
 }
 
 fn parse_leads_to(line: &str) -> Vec<String> {
@@ -99,80 +105,134 @@ fn parse_input(contents: &str) -> HashMap<String, Valve> {
     return output;
 }
 
-fn open_valve(valves: &HashMap<String, Valve>, current: &Current) -> Current {
+fn open_valve(valves: &HashMap<String, Valve>, current: &Node) -> Node {
     let mut next = current.clone();
     next.time_remaining -= 1;
     next.current_flow += next.time_remaining * valves.get(&current.current_node).unwrap().flow_rate;
-    next.open.insert(next.current_node.clone());
+    // next.open.insert(next.current_node.clone());
     next
 }
 
-static TOTAL_TIME: i64 = 31;
+fn get_next(valves: &HashMap<String, Valve>, open: &HashSet<String>, current: &Node) -> Vec<Node> {
+    if !open.contains(&current.current_node) && current.current_node != "AA" {
+        let next = open_valve(&valves, &current);
+        if next.time_remaining > 0 {
+            return vec![next];
+        }
+        return vec![];
+    }
+
+    let valve = valves.get(&current.current_node).unwrap();
+    valve
+        .shortest_path
+        .iter()
+        .filter(|(a, _b)| !open.contains(*a))
+        .map(|(a, b)| {
+            let mut next = current.clone();
+            next.time_remaining -= b;
+            next.current_node = a.clone();
+            next
+        })
+        .filter(|next| next.time_remaining > 0)
+        .collect()
+}
+
+static TOTAL_TIME: i64 = 30;
 fn part1(contents: &str) -> i64 {
     let valves = parse_input(contents);
-    // println!("{:?}", valves);
-    // println!("\n{:?}", valves.get("AA").unwrap());
-    // println!("{:?}", valves.get("EE").unwrap());
-    // println!("{:?}", valves.get("CC").unwrap());
-    // println!("{:?}", valves.get("HH").unwrap());
-    // println!("{:?}", valves.get("JJ").unwrap());
-    // println!("{:?}", valves.get("DD").unwrap());
-    // println!("{:?}\n", valves.get("BB").unwrap());
 
     let mut max: i64 = 0;
     let mut queue: VecDeque<Current> = VecDeque::new();
     queue.push_back(Current {
-        time_remaining: TOTAL_TIME,
-        current_flow: 0,
-        current_node: "AA".to_string(),
+        node: Node {
+            time_remaining: TOTAL_TIME,
+            current_flow: 0,
+            current_node: "AA".to_string(),
+        },
+        elephant: Node {
+            time_remaining: TOTAL_TIME,
+            current_flow: 0,
+            current_node: "AA".to_string(),
+        },
         open: HashSet::new(),
-        path: vec!["AA".to_string()],
     });
 
     while !queue.is_empty() {
         let current = queue.pop_front().unwrap();
-        if max < current.current_flow {
-            println!("{:?}", current.path);
-        }
-        max = max.max(current.current_flow);
+        max = max.max(current.node.current_flow);
 
-        if !current.open.contains(&current.current_node) {
-            let next = open_valve(&valves, &current);
-            if next.time_remaining > 0 {
+        get_next(&valves, &current.open, &current.node)
+            .iter()
+            .for_each(|node| {
+                let mut next = current.clone();
+                next.node = node.clone();
+                if node.current_node == current.node.current_node {
+                    next.open.insert(node.current_node.clone());
+                }
                 queue.push_back(next);
-            }
-        } else {
-            let valve = valves.get(&current.current_node).unwrap();
-            valve
-                .shortest_path
-                .iter()
-                .filter(|(a, _b)| !current.open.contains(*a))
-                .for_each(|(a, b)| {
-                    let mut next = current.clone();
-                    next.time_remaining -= b;
-                    next.current_node = a.clone();
-                    next.path.push(a.clone());
-                    if next.time_remaining > 0 {
-                        queue.push_back(next);
-                    }
-                })
-        }
+            });
     }
-    // The master plan
-    //   - Identify real valves
-    //   - Calculate shortest path between all real valves
-    //       - fn shortest_path(valves, from: "", to: "") -> i64
-    //   - Calculate shortest path from start to real valves
-    //   - DFS should work at this point
-    //       - time_remaining=30
-    //       - time_remaining=time_remaining - distances
-    //       - score += flow_rate * time_remaining--
-    //       - while time_remaining > 30
     return max;
 }
 
-fn part2(_contents: &str) -> i64 {
-    return 0;
+fn part2(contents: &str) -> i64 {
+    let valves = parse_input(contents);
+
+    let mut max: i64 = 0;
+    let mut queue: VecDeque<(Current, Current)> = VecDeque::new();
+    // queue.push_back((
+    //     Current {
+    //         time_remaining: TOTAL_TIME - 4,
+    //         current_flow: 0,
+    //         current_node: "AA".to_string(),
+    //         open: HashSet::new(),
+    //         path: vec!["AA".to_string()],
+    //     },
+    //     Current {
+    //         time_remaining: TOTAL_TIME - 4,
+    //         current_flow: 0,
+    //         current_node: "AA".to_string(),
+    //         open: HashSet::new(),
+    //         path: vec!["AA".to_string()],
+    //     },
+    // ));
+
+    // while !queue.is_empty() {
+    //     let (current, elephant) = queue.pop_front().unwrap();
+    //     max = max.max(current.current_flow + elephant.current_flow);
+
+    //     let current_next = get_next(&valves, &current);
+    //     let elephant_next = get_next(&valves, &elephant);
+
+    //     if current_next.len() == 0 {
+    //         elephant_next
+    //             .iter()
+    //             .for_each(|c| queue.push_back((current.clone(), c.clone())));
+    //         continue;
+    //     }
+    //     if elephant_next.len() == 0 {
+    //         elephant_next
+    //             .iter()
+    //             .for_each(|c| queue.push_back((current.clone(), c.clone())));
+    //         continue;
+    //     }
+    //     for c in current_next {
+    //         for e in &elephant_next {
+    //             if c.current_node != e.current_node {
+    //                 let mut a = c.clone();
+    //                 let mut b = e.clone();
+
+    //                 let mut set = a.open.clone();
+    //                 set.extend(b.open);
+    //                 a.open = set.clone();
+    //                 b.open = set.clone();
+
+    //                 queue.push_back((a, b));
+    //             }
+    //         }
+    //     }
+    // }
+    return max;
 }
 
 pub fn run(contents: &str) {
