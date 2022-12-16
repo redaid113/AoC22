@@ -179,59 +179,71 @@ fn part2(contents: &str) -> i64 {
     let valves = parse_input(contents);
 
     let mut max: i64 = 0;
-    let mut queue: VecDeque<(Current, Current)> = VecDeque::new();
-    // queue.push_back((
-    //     Current {
-    //         time_remaining: TOTAL_TIME - 4,
-    //         current_flow: 0,
-    //         current_node: "AA".to_string(),
-    //         open: HashSet::new(),
-    //         path: vec!["AA".to_string()],
-    //     },
-    //     Current {
-    //         time_remaining: TOTAL_TIME - 4,
-    //         current_flow: 0,
-    //         current_node: "AA".to_string(),
-    //         open: HashSet::new(),
-    //         path: vec!["AA".to_string()],
-    //     },
-    // ));
+    let mut queue: VecDeque<Current> = VecDeque::new();
+    queue.push_back(Current {
+        node: Node {
+            time_remaining: TOTAL_TIME - 4,
+            current_flow: 0,
+            current_node: "AA".to_string(),
+        },
+        elephant: Node {
+            time_remaining: TOTAL_TIME - 4,
+            current_flow: 0,
+            current_node: "AA".to_string(),
+        },
+        open: HashSet::new(),
+    });
 
-    // while !queue.is_empty() {
-    //     let (current, elephant) = queue.pop_front().unwrap();
-    //     max = max.max(current.current_flow + elephant.current_flow);
+    while !queue.is_empty() {
+        let current = queue.pop_front().unwrap();
+        max = max.max(current.node.current_flow + current.elephant.current_flow);
 
-    //     let current_next = get_next(&valves, &current);
-    //     let elephant_next = get_next(&valves, &elephant);
+        let current_next = get_next(&valves, &current.open, &current.node);
+        let elephant_next = get_next(&valves, &current.open, &current.elephant);
 
-    //     if current_next.len() == 0 {
-    //         elephant_next
-    //             .iter()
-    //             .for_each(|c| queue.push_back((current.clone(), c.clone())));
-    //         continue;
-    //     }
-    //     if elephant_next.len() == 0 {
-    //         elephant_next
-    //             .iter()
-    //             .for_each(|c| queue.push_back((current.clone(), c.clone())));
-    //         continue;
-    //     }
-    //     for c in current_next {
-    //         for e in &elephant_next {
-    //             if c.current_node != e.current_node {
-    //                 let mut a = c.clone();
-    //                 let mut b = e.clone();
+        if current_next.len() == 0 {
+            elephant_next.iter().for_each(|node| {
+                let mut next = current.clone();
+                next.elephant = node.clone();
+                if node.current_node == current.elephant.current_node {
+                    next.open.insert(node.current_node.clone());
+                }
+                queue.push_back(next);
+            });
+            continue;
+        }
+        if elephant_next.len() == 0 {
+            current_next.iter().for_each(|node| {
+                let mut next = current.clone();
+                next.node = node.clone();
+                if node.current_node == current.node.current_node {
+                    next.open.insert(node.current_node.clone());
+                }
+                queue.push_back(next);
+            });
+            continue;
+        }
+        for c in current_next {
+            for e in &elephant_next {
+                if c.current_node != e.current_node {
+                    let mut next = current.clone();
 
-    //                 let mut set = a.open.clone();
-    //                 set.extend(b.open);
-    //                 a.open = set.clone();
-    //                 b.open = set.clone();
+                    next.node = c.clone();
+                    next.elephant = e.clone();
 
-    //                 queue.push_back((a, b));
-    //             }
-    //         }
-    //     }
-    // }
+                    if next.node.current_node == current.node.current_node {
+                        next.open.insert(next.node.current_node.clone());
+                    }
+
+                    if next.elephant.current_node == current.elephant.current_node {
+                        next.open.insert(next.elephant.current_node.clone());
+                    }
+
+                    queue.push_back(next);
+                }
+            }
+        }
+    }
     return max;
 }
 
