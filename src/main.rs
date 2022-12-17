@@ -19,6 +19,7 @@ mod d_14;
 mod d_15;
 mod d_16;
 mod d_17;
+mod d_18;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -47,6 +48,7 @@ fn main() {
         "d_15" => d_15::run(&contents),
         "d_16" => d_16::run(&contents),
         "d_17" => d_17::run(&contents),
+        "d_18" => d_18::run(&contents),
 
         _ => println!("nothing"),
     }
