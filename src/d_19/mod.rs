@@ -97,12 +97,12 @@ fn hit_the_mother_lode(robots: &Robots, max_iteration: usize) -> u32 {
     }
 
     let mut max = 0;
-
     for i in 0..max_iteration {
         let geodudes = iterations[i]
             .iter()
             .map(|iteration| iteration.robot_count[3])
             .max();
+
         for j in 0..iterations[i].len() {
             let iteration = iterations[i][j].clone();
             if iteration.robot_count[3] != geodudes.unwrap()
