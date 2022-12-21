@@ -103,6 +103,8 @@ fn hit_the_mother_lode(robots: &Robots, max_iteration: usize) -> u32 {
             .map(|iteration| iteration.robot_count[3])
             .max();
 
+        let left = (max_iteration - i) as u32;
+        let most_geodues = (left * (left + 1)) / 2;
         for j in 0..iterations[i].len() {
             let iteration = iterations[i][j].clone();
             if iteration.robot_count[3] != geodudes.unwrap()
@@ -110,10 +112,14 @@ fn hit_the_mother_lode(robots: &Robots, max_iteration: usize) -> u32 {
             {
                 continue;
             }
+            if max > (most_geodues + iteration.ore_count[3] + iteration.robot_count[3] * left) {
+                continue;
+            }
             max = max.max(
                 iteration.ore_count[3]
                     + iteration.robot_count[3] * (max_iteration as u32 - i as u32),
             );
+
             (0..4).for_each(|r| {
                 if max_robots[r] == iteration.robot_count[r] {
                     return;
